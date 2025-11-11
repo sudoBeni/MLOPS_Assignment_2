@@ -1,5 +1,6 @@
 # Markdown files
 *.md
+!README.md
 
 # Jupyter Notebooks
 *.ipynb
