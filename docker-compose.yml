@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: mlops-project2:latest
-    container_name: mlops-training-task2
+    container_name: mlops
     
     # Resource limits (adjust based on your machine)
     deploy:

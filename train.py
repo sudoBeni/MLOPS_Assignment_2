@@ -60,11 +60,11 @@ def parse_args():
     # Paths and logging
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoints',
                         help='Directory to save model checkpoints (default: checkpoints)')
-    parser.add_argument('--project_name', type=str, default='MLOPS___Sem_5___Project_01',
+    parser.add_argument('--project_name', type=str, required=True,
                         help='W&B project name')
-    parser.add_argument('--run_name', type=str, default=None,
-                        help='W&B run name (auto-generated if not provided)')
-    parser.add_argument('--tags', type=str, nargs='+', default=['training', 'task1'],
+    parser.add_argument('--run_name', type=str, required=True,
+                        help='W&B run name')
+    parser.add_argument('--tags', type=str, nargs='+', required=True,
                         help='Tags for W&B run')
     
     # Other options

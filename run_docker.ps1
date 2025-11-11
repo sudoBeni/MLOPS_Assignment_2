@@ -1,80 +1,102 @@
 # PowerShell script to build and run Docker container for Task 2
 # MLOps Project 2 - Best Hyperparameters Training
 
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "MLOps Project 2 - Task 2: Docker Training" -ForegroundColor Cyan
-Write-Host "========================================`n" -ForegroundColor Cyan
+Write-Host "========================================"
+Write-Host "MLOps Project 2: Easy Build & Run"
+Write-Host "========================================"
 
 # Configuration
 $IMAGE_NAME = "mlops-project2"
-$CONTAINER_NAME = "mlops-training-task2"
+$CONTAINER_NAME = "mlops-training"
 
-# Best hyperparameters from Project 1
-Write-Host "Best Hyperparameters:" -ForegroundColor Yellow
-Write-Host "  Learning Rate: 0.00002" -ForegroundColor White
-Write-Host "  Scheduler: linear" -ForegroundColor White
-Write-Host "  Max Seq Length: 128" -ForegroundColor White
-Write-Host "  Optimizer: adamw" -ForegroundColor White
-Write-Host "  Batch Size: 16" -ForegroundColor White
-Write-Host "  Warmup Steps: 50" -ForegroundColor White
-Write-Host "  Weight Decay: 0.05`n" -ForegroundColor White
+# Best Hyperparameters (from Project 1)
+$LEARNING_RATE = "0.00002"
+$SCHEDULER = "linear"
+$MAX_SEQ_LENGTH = "128"
+$OPTIMIZER = "adamw"
+$BATCH_SIZE = "16"
+$WARMUP_STEPS = "50"
+$WEIGHT_DECAY = "0.05"
+$EPOCHS = "3"
 
 # Check if Docker is running
-Write-Host "Checking Docker..." -ForegroundColor Yellow
+Write-Host "Checking Docker status."
 $dockerCheck = docker version 2>&1
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "X Docker is not running. Please start Docker Desktop." -ForegroundColor Red
-    Write-Host "`nSteps to fix:" -ForegroundColor Yellow
-    Write-Host "1. Open Docker Desktop application" -ForegroundColor White
-    Write-Host "2. Wait for it to fully start (whale icon should be stable)" -ForegroundColor White
-    Write-Host "3. Run this script again`n" -ForegroundColor White
+    Write-Host "Docker is not running. Please start Docker Desktop."
     exit 1
 }
-Write-Host "OK Docker is running`n" -ForegroundColor Green
+Write-Host "Docker is running"
 
 # Remove old container if exists
-Write-Host "Cleaning up old containers..." -ForegroundColor Yellow
+Write-Host "Cleaning up old containers."
 docker rm -f $CONTAINER_NAME 2>$null
 
 # Build Docker image
-Write-Host "`nBuilding Docker image..." -ForegroundColor Yellow
-Write-Host "This may take a few minutes (downloading dependencies)...`n" -ForegroundColor Gray
+Write-Host "Building Docker image."
+Write-Host "This may take a few minutes (downloading dependencies)."
 docker build -t ${IMAGE_NAME}:latest .
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "`nX Docker build failed!" -ForegroundColor Red
+    Write-Host "Docker build failed!"
     exit 1
 }
 
-Write-Host "`nOK Docker image built successfully!`n" -ForegroundColor Green
+Write-Host "Docker image built successfully!"
 
-# Ask user if they want to enable W&B logging
-Write-Host "Do you want to enable Weights & Biases logging? (y/N): " -ForegroundColor Yellow -NoNewline
+# Ask for W&B configuration
+Write-Host ""
+Write-Host "========== W&B Configuration =========="
+Write-Host "Do you want to enable Weights & Biases logging? (y/n): "
 $wandb_choice = Read-Host
 
 $wandb_args = "--no_wandb"
 if ($wandb_choice -eq "y" -or $wandb_choice -eq "Y") {
-    Write-Host "Enter your W&B API key (or press Enter to use cached login): " -ForegroundColor Yellow -NoNewline
+    Write-Host ""
+    Write-Host "Enter your W&B API key: "
     $wandb_key = Read-Host
+    
+    Write-Host "Enter W&B project name: "
+    $project_name = Read-Host
+    while (-not $project_name) {
+        Write-Host "Project name is required. Please enter a project name: "
+        $project_name = Read-Host
+    }
+    
+    Write-Host "Enter run name: "
+    $run_name = Read-Host
+    while (-not $run_name) {
+        Write-Host "Run name is required. Please enter a run name: "
+        $run_name = Read-Host
+    }
+    
+    Write-Host "Enter tags (comma-separated): "
+    $tags = Read-Host
+    while (-not $tags) {
+        Write-Host "Tags are required. Please enter at least one tag: "
+        $tags = Read-Host
+    }
+    
     if ($wandb_key) {
-        $wandb_args = "--wandb_key $wandb_key"
+        $wandb_args = "--wandb_key $wandb_key --project_name $project_name --run_name $run_name --tags $($tags -replace ',', ' ')"
     }
     else {
-        $wandb_args = ""
+        Write-Host "No API key provided, W&B logging disabled."
+        $wandb_args = "--no_wandb"
     }
 }
 
 # Run container
-Write-Host "`nStarting training container..." -ForegroundColor Yellow
-Write-Host "Container name: $CONTAINER_NAME" -ForegroundColor Gray
-Write-Host "Checkpoints will be saved to: ./checkpoints/`n" -ForegroundColor Gray
+Write-Host "Starting container."
+Write-Host "Container name: $CONTAINER_NAME"
+Write-Host "Checkpoints will be saved to: ./checkpoints/"
 
 # Create checkpoints directory if it doesn't exist
 New-Item -ItemType Directory -Force -Path ./checkpoints | Out-Null
 
 # Run with custom command if W&B is enabled
 if ($wandb_args -ne "--no_wandb") {
-    docker run --name $CONTAINER_NAME -v "${PWD}/checkpoints:/app/checkpoints" $IMAGE_NAME sh -c "python train.py --lr 0.00002 --scheduler linear --max_seq_length 128 --optimizer adamw --train_batch_size 16 --warmup_steps 50 --weight_decay 0.05 --epochs 3 --checkpoint_dir /app/checkpoints --run_name docker_best_params --tags docker task2 best_params $wandb_args"
+    docker run --name $CONTAINER_NAME -v "${PWD}/checkpoints:/app/checkpoints" $IMAGE_NAME sh -c "python train.py --lr $LEARNING_RATE --scheduler $SCHEDULER --max_seq_length $MAX_SEQ_LENGTH --optimizer $OPTIMIZER --train_batch_size $BATCH_SIZE --warmup_steps $WARMUP_STEPS --weight_decay $WEIGHT_DECAY --epochs $EPOCHS --checkpoint_dir /app/checkpoints --run_name docker_best_params --tags docker task2 best_params $wandb_args"
 }
 else {
     docker run --name $CONTAINER_NAME -v "${PWD}/checkpoints:/app/checkpoints" $IMAGE_NAME
@@ -82,21 +104,21 @@ else {
 
 # Check exit status
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "`n========================================" -ForegroundColor Cyan
-    Write-Host "OK Training completed successfully!" -ForegroundColor Green
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "Checkpoints saved to: ./checkpoints/" -ForegroundColor White
-    Write-Host "`nTo view logs: docker logs $CONTAINER_NAME" -ForegroundColor Gray
+    Write-Host "========================================"
+    Write-Host "Training completed successfully!"
+    Write-Host "========================================"
+    Write-Host "Checkpoints saved to: ./checkpoints/"
+    Write-Host "To view logs: docker logs $CONTAINER_NAME"
 }
 else {
-    Write-Host "`n========================================" -ForegroundColor Cyan
-    Write-Host "X Training failed!" -ForegroundColor Red
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "View logs: docker logs $CONTAINER_NAME" -ForegroundColor Gray
+    Write-Host "========================================"
+    Write-Host "Training failed!"
+    Write-Host "========================================"
+    Write-Host "View logs: docker logs $CONTAINER_NAME"
     exit 1
 }
 
 # Clean up
-Write-Host "`nCleaning up container..." -ForegroundColor Yellow
+Write-Host "Cleaning up container."
 docker rm $CONTAINER_NAME 2>$null
-Write-Host "OK Done!`n" -ForegroundColor Green
+Write-Host "All cleaned up!"
