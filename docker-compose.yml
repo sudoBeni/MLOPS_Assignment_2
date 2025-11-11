@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  mlops-training:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mlops-project2:latest
+    container_name: mlops-training-task2
+    
+    # Resource limits (adjust based on your machine)
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    
+    # Mount checkpoints directory to persist models
+    volumes:
+      - ./checkpoints:/app/checkpoints
+    
+    # Override environment variables if needed
+    environment:
+      - LEARNING_RATE=0.00002
+      - LR_SCHEDULER_TYPE=linear
+      - MAX_SEQ_LENGTH=128
+      - OPTIMIZER_TYPE=adamw
+      - TRAIN_BATCH_SIZE=16
+      - WARMUP_STEPS=50
+      - WEIGHT_DECAY=0.05
+      - EPOCHS=3
+      # Uncomment and add your W&B key if you want logging
+      # - WANDB_API_KEY=your_key_here
+    
+    # Restart policy
+    restart: "no"
+    
+    # Keep container running for debugging (optional)
+    # stdin_open: true
+    # tty: true

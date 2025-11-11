@@ -2,12 +2,12 @@ from datetime import datetime
 from typing import Optional
 
 import evaluate
-import lightning as L
+import pytorch_lightning as pl
 import torch
 from transformers import AutoConfig, AutoModelForSequenceClassification
 
 
-class GLUETransformer(L.LightningModule):
+class GLUETransformer(pl.LightningModule):
     def __init__(
         self,
         model_name_or_path: str,

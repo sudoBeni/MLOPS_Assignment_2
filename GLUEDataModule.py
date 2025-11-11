@@ -1,10 +1,10 @@
 import datasets
-import lightning as L
+import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 
 
-class GLUEDataModule(L.LightningDataModule):
+class GLUEDataModule(pl.LightningDataModule):
     task_text_field_map = {
         "cola": ["sentence"],
         "sst2": ["sentence"],
